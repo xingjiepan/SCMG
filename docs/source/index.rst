@@ -14,4 +14,4 @@ Contents
 
    usage
    api
-   tutorials
+   tutorials/index
