@@ -6,6 +6,7 @@ Create a virtual environment (optional but recommended):
 .. code-block:: console
 
    $ conda create -n scmg python=3.10
+   $ conda activate scmg
 
 Install SCMG using pip:
 

@@ -10,8 +10,10 @@ description = "Single cell manifold generator"
 readme = "README.rst"
 requires-python = ">=3.8"
 dependencies = [
-    "numpy",
-    "scanpy",
-    "torch==2.1.2", 
-    'datasets',
+    "numpy==1.26.4",
+    "matplotlib==3.8.4",
+    "pandas==1.5.3",
+    "scanpy==1.10.4",
+    "torch==2.3.1", 
+    'datasets==2.20.0',
 ]
