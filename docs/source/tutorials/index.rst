@@ -6,4 +6,4 @@ Contents
 
 .. toctree::
 
-   conditioned_generation_of_cell_states
+   visualize_the_global_cell_state_manifold
