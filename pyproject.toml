@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scmg"
+authors = [{name = "Xingjie Pan"}]
+version = "0.1.0"
+description = "Single cell manifold generator"
+readme = "README.rst"
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+    "scanpy",
+    "torch==2.1.2", 
+    'datasets',
+]
