@@ -1,10 +1,5 @@
-Usage
-=====
-
-.. _installation:
-
 Installation
-------------
+============
 
 Create a virtual environment (optional but recommended):
 
