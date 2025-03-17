@@ -14,3 +14,4 @@ Contents
 
    usage
    api
+   tutorials
