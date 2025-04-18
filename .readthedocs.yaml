@@ -1,4 +1,4 @@
-version: "2"
+version: 2
 
 build:
   os: "ubuntu-22.04"
@@ -9,8 +9,7 @@ python:
   install:
     - method: pip
       path: .
-    - method: pip
-      requirements: docs/requirements.txt
+  requirements: docs/requirements.txt
 
 sphinx:
   configuration: docs/source/conf.py
