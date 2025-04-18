@@ -1,7 +1,7 @@
 API
 ===
 
-.. :toctree::
+.. toctree::
    :maxdepth: 2
    :caption: Contents:
    scmg
