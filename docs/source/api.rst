@@ -1,6 +1,9 @@
 API
 ===
 
-.. autosummary::
-   :toctree: generated
+.. :toctree::
+   :maxdepth: 2
+   :caption: Contents:
+   scmg
+
 
