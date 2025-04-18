@@ -29,4 +29,4 @@ Contents
 
    installation
    tutorials/index
-   api
+   api/index
