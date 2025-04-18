@@ -17,7 +17,13 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
     'nbsphinx',
+    "sphinx.ext.napoleon",  # for NumPy/Google docstring support
+    "sphinx_autodoc_typehints",
 ]
+
+autodoc_member_order = "bysource"          # Keeps class/function order consistent with your code
+autoclass_content = "both"                 # Show class-level and __init__ docstring
+typehints_fully_qualified = False          # Optional: shortens type hints
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),
