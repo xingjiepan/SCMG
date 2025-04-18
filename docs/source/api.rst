@@ -1,9 +1,6 @@
-API
+api
 ===
-
-Contents
---------
 
 .. toctree::
 
-   scmg
+   modules
