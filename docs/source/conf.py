@@ -18,7 +18,6 @@ extensions = [
     'sphinx.ext.intersphinx',
     'nbsphinx',
     "sphinx.ext.napoleon",  # for NumPy/Google docstring support
-    "sphinx_autodoc_typehints",
 ]
 
 autodoc_member_order = "bysource"          # Keeps class/function order consistent with your code
