@@ -30,3 +30,4 @@ Contents
    installation
    tutorials/index
    api
+   modules
