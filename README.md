@@ -37,7 +37,7 @@ The current version of the tested release is scmg1.0.2
 ## Installation guide
 The SCMG package can be installed from pip. The installation takes one to a few minutes. The detailed instructions for installation are available [here](https://scmg.readthedocs.io/en/latest/installation.html)
 
-## Demos and instructions for use
+## Demo and instructions for use
 Tutorials for the main functions of SCMG are available [here](https://scmg.readthedocs.io/en/latest/tutorials/index.html). The running time for individual tutorials ranges from a few minutes (with GPU) to within one hour (with CPU only).
 
 The scripts to reproduce the results reported in the manuscript are available [here](https://github.com/xingjiepan/SCMG_scripts).
