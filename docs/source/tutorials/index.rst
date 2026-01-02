@@ -17,3 +17,5 @@ Contents
    project_single_cell_states_onto_the_global_cell_state_manifold
    conditioned_generation_of_cell_states
    predict_causal_genes_for_cell_state_transitions
+   systematic_decomposition_of_perturbation_effects
+   few_shot_prediction_of_perturbation_effects
