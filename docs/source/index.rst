@@ -20,7 +20,12 @@ Key Features
 
 - **Causal Gene Prediction**  
   Identify candidate causal genes driving transitions between specific cell states.
+  
+- **Universal Decomposition of Perturbation Effects**  
+  Decompose perturbation effects into universal principal axes of cell state transition and perturbation classes. 
 
+- **Few-shot Prediction of Perturbation Effects**  
+  Predict perturbation-induced cell state transition by few-shot learning.
 
 Contents
 --------
