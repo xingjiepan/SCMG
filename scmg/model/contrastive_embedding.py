@@ -174,7 +174,7 @@ import anndata
 import sklearn.neighbors
 
 
-def get_Xs_from_anndata(adata, standard_genes):
+def get_Xs_from_anndata(adata, standard_genes, pre_normalized=False):
 
     # Define the relationships between indices
     standard_genes = list(standard_genes)
@@ -194,8 +194,9 @@ def get_Xs_from_anndata(adata, standard_genes):
     X[:, common_in_standard_indices] = adata_X[:, common_in_adata_indices]
 
     # Normalize the expressions
-    X = X / (X.sum(axis=1, keepdims=True) + 1e-6) * 1e4
-    X = np.log1p(X)
+    if not pre_normalized:
+        X = X / (X.sum(axis=1, keepdims=True) + 1e-6) * 1e4
+        X = np.log1p(X)
 
     # Extract the measurement mask
     X_mask = np.zeros((adata.shape[0], len(standard_genes)), dtype=bool)
@@ -207,7 +208,8 @@ def embed_adata(model,
                  adata, 
                  standard_gene_csv=None,
                  batch_size=512,
-                 inplace=True
+                 inplace=True,
+                 pre_normalized=False,
                  ):
     '''Embed the data in an AnnData object using the given model.
     The adata object should have the following attributes:
@@ -233,7 +235,7 @@ def embed_adata(model,
         stop = min((i + 1) * batch_size, N_cells)
         adata_batch = adata_cg[start:stop].copy()
 
-        X, _ = get_Xs_from_anndata(adata_batch, standard_genes)
+        X, _ = get_Xs_from_anndata(adata_batch, standard_genes, pre_normalized=pre_normalized)
         X = torch.tensor(X, dtype=torch.float32).to(device)
 
         with torch.no_grad():
