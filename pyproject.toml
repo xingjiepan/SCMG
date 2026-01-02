@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "scmg"
 authors = [{name = "Xingjie Pan"}]
-version = "1.0.3"
+version = "1.0.4"
 description = "Single cell manifold generator"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -18,8 +18,8 @@ dependencies = [
     'datasets==2.20.0',
 ]
 
-[tool.setuptools]
-packages = ["scmg"]
+[tool.setuptools.packages.find]
+include = ["scmg*"]
 
 [tool.setuptools.package-data]
 "scmg" = ["data/**/*"]
