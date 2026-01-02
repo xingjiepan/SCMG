@@ -25,3 +25,19 @@
 ## Installation and Tutorials
 
 Full documentation is available at: https://scmg.readthedocs.io/
+
+## System requirements
+### OS Requirements
+This package is compatible with major operating systems that support PyTorch, including Linux, macOS, and Windows.
+### Package dependencies
+The package dependencies are specified in [pyproject.toml](https://github.com/xingjiepan/SCMG/blob/main/pyproject.toml)
+### Tested version
+The current version of the tested release is scmg1.0.2
+
+## Installation guide
+The SCMG package can be installed from pip. The installation takes one to a few minutes. The detailed instructions for installation are available [here](https://scmg.readthedocs.io/en/latest/installation.html)
+
+## Demo and instructions for use
+Tutorials for the main functions of SCMG are available [here](https://scmg.readthedocs.io/en/latest/tutorials/index.html). The running time for individual tutorials ranges from a few minutes (with GPU) to within one hour (with CPU only).
+
+The scripts to reproduce the results reported in the manuscript are available [here](https://github.com/xingjiepan/SCMG_scripts).
