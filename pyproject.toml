@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "scmg"
 authors = [{name = "Xingjie Pan"}]
-version = "1.0.2"
+version = "1.0.3"
 description = "Single cell manifold generator"
 readme = "README.md"
 requires-python = ">=3.8"
