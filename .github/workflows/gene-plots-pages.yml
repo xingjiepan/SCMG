@@ -1,0 +1,53 @@
+name: Deploy gene plot browser
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "global_patterns/index.html"
+      - "global_patterns/styles.css"
+      - "global_patterns/app.js"
+      - "global_patterns/manifest.json"
+      - ".github/workflows/gene-plots-pages.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Prepare static site
+        run: |
+          mkdir -p site
+          cp global_patterns/index.html site/
+          cp global_patterns/styles.css site/
+          cp global_patterns/app.js site/
+          cp global_patterns/manifest.json site/
+          cp global_patterns/README.md site/
+
+      - name: Upload static site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Global Gene Expression Plots</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <div>
+        <p class="eyebrow">SCMG</p>
+        <h1>Global Gene Expression Plots</h1>
+      </div>
+      <div class="counter" id="counter">Loading plots</div>
+    </header>
+
+    <main>
+      <div class="layout">
+        <div class="browser">
+          <section class="search-panel" aria-label="Gene plot search">
+            <label for="searchInput">Search by gene or plot name</label>
+            <div class="search-row">
+              <input id="searchInput" type="search" autocomplete="off" placeholder="MYC, A1BG, PTGS2">
+              <button id="clearButton" type="button">Clear</button>
+            </div>
+          </section>
+
+          <section class="results-shell">
+            <div class="results-head">
+              <h2 id="resultsTitle">Plots</h2>
+              <p id="resultsMeta"></p>
+            </div>
+            <div class="grid" id="resultsGrid" aria-live="polite"></div>
+            <button class="load-more" id="loadMoreButton" type="button" hidden>Show more</button>
+          </section>
+        </div>
+
+        <aside class="umap-panel" aria-label="Global cell type UMAP">
+          <h2>Global Cell Type UMAP</h2>
+          <button id="umapZoomButton" class="umap-zoom" type="button" aria-label="Open global cell type UMAP">
+            <img src="https://huggingface.co/datasets/xingjiepan/SCMG_data/resolve/main/data/global_cell_type_umap.png" alt="Global cell type UMAP">
+          </button>
+        </aside>
+      </div>
+    </main>
+
+    <dialog id="imageDialog" class="image-dialog">
+      <button id="closeDialogButton" class="dialog-close" type="button" aria-label="Close image">Close</button>
+      <figure>
+        <img id="dialogImage" alt="">
+        <figcaption id="dialogCaption"></figcaption>
+      </figure>
+    </dialog>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
