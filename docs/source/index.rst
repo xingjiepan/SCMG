@@ -7,7 +7,7 @@ Key Features
 ------------
 
 - **Global Manifold Construction**  
-  Build a well-integrated reference manifold of single-cell transcriptional states that captures cell-state relationships and gene expression patterns.
+  Build a well-integrated reference manifold of single-cell transcriptional states that captures cell-state relationships and gene expression patterns. The global gene expression patterns can be visualized [here] (https://xingjiepan.github.io/SCMG/).
 
 - **Zero-Shot Dataset Integration**  
   Integrate new scRNA-seq datasets without the need for model retraining.
