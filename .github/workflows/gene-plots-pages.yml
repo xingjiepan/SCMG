@@ -10,6 +10,8 @@ on:
       - "global_patterns/styles.css"
       - "global_patterns/app.js"
       - "global_patterns/manifest.json"
+      - "global_patterns/cell_type_manifest.json"
+      - "global_patterns/README.md"
       - ".github/workflows/gene-plots-pages.yml"
 
 permissions:
@@ -43,6 +45,7 @@ jobs:
           cp global_patterns/styles.css site/
           cp global_patterns/app.js site/
           cp global_patterns/manifest.json site/
+          cp global_patterns/cell_type_manifest.json site/
           cp global_patterns/README.md site/
 
       - name: Upload static site

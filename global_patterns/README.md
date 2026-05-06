@@ -1,9 +1,10 @@
-# Global Gene Expression Plot Browser
+# Global Pattern Browser
 
-This directory is a static website for browsing gene-expression plot PNGs.
-The search manifest is stored locally, while the images are loaded from the
-`xingjiepan/SCMG_data` Hugging Face dataset. The global cell type UMAP is also
-loaded from Hugging Face as a persistent reference panel.
+This directory is a static website for browsing global gene-expression and
+cell-type pattern PNGs. The search manifests are stored locally, while the
+images are loaded from the `xingjiepan/SCMG_data` Hugging Face dataset. The
+global cell type UMAP is also loaded from Hugging Face as a persistent
+reference panel.
 
 ## Run locally
 
@@ -15,12 +16,13 @@ python -m http.server 8000
 
 Then open `http://localhost:8000`.
 
-## Update the image manifest
+## Update the image manifests
 
-Run this from the repository root whenever images are added or removed:
+Run these from the repository root whenever images are added or removed:
 
 ```bash
 python -c 'import json, pathlib; p=pathlib.Path("global_patterns/global_gene_exp_plots_all"); files=sorted(x.name for x in p.glob("*.png") if x.is_file()); pathlib.Path("global_patterns/manifest.json").write_text(json.dumps(files, indent=2)+"\n")'
+python -c 'import json, pathlib; p=pathlib.Path("global_patterns/global_cell_type_plots_all"); files=sorted(x.name for x in p.glob("*.png") if x.is_file()); pathlib.Path("global_patterns/cell_type_manifest.json").write_text(json.dumps(files, indent=2)+"\n")'
 ```
 
 The website expects plot images in the Hugging Face dataset under prefix
@@ -29,6 +31,8 @@ folders like:
 ```text
 data/global_gene_exp_plots_all/M/MYC.png
 data/global_gene_exp_plots_all/S/snoZ196.png
+data/global_cell_type_plots_all/M/macrophage.png
+data/global_cell_type_plots_all/E/enteroendocrine%20cell.png
 data/global_cell_type_umap.png
 ```
 

@@ -1,10 +1,36 @@
 const PAGE_SIZE = 96;
 const HF_DATA_BASE = "https://huggingface.co/datasets/xingjiepan/SCMG_data/resolve/main/data";
-const IMAGE_DIR = `${HF_DATA_BASE}/global_gene_exp_plots_all`;
 const UMAP_URL = `${HF_DATA_BASE}/global_cell_type_umap.png`;
+const COLLECTIONS = {
+  genes: {
+    label: "Genes",
+    itemLabel: "gene",
+    manifest: "manifest.json",
+    imageDir: `${HF_DATA_BASE}/global_gene_exp_plots_all`,
+    searchLabel: "Search by gene name",
+    searchNote: "",
+    placeholder: "MYC, A1BG, PTGS2",
+    title: "Gene plots",
+    empty: "No matching gene plots found.",
+    alt: "gene expression plot",
+  },
+  cellTypes: {
+    label: "Cell types",
+    itemLabel: "cell type",
+    manifest: "cell_type_manifest.json",
+    imageDir: `${HF_DATA_BASE}/global_cell_type_plots_all`,
+    searchLabel: "Search by cell type name",
+    searchNote: "Cell type names are taken directly from author annotations in the original published datasets. Discrepancy may come from naming convention differences and annotation errors.",
+    placeholder: "macrophage, neuron, epithelial",
+    title: "Cell type plots",
+    empty: "No matching cell type plots found.",
+    alt: "cell type global pattern plot",
+  },
+};
 
 const state = {
-  plots: [],
+  collection: "genes",
+  collections: {},
   filtered: [],
   shown: PAGE_SIZE,
   query: "",
@@ -13,7 +39,10 @@ const state = {
 const els = {
   counter: document.querySelector("#counter"),
   search: document.querySelector("#searchInput"),
+  searchLabel: document.querySelector("#searchLabel"),
+  searchNote: document.querySelector("#searchNote"),
   clear: document.querySelector("#clearButton"),
+  modeButtons: document.querySelectorAll(".mode-button"),
   grid: document.querySelector("#resultsGrid"),
   title: document.querySelector("#resultsTitle"),
   meta: document.querySelector("#resultsMeta"),
@@ -25,9 +54,13 @@ const els = {
   umapZoom: document.querySelector("#umapZoomButton"),
 };
 
+function activeCollection() {
+  return COLLECTIONS[state.collection];
+}
+
 function imageUrl(file) {
   const prefix = file[0].toUpperCase();
-  return `${IMAGE_DIR}/${prefix}/${encodeURIComponent(file)}`;
+  return `${activeCollection().imageDir}/${prefix}/${encodeURIComponent(file)}`;
 }
 
 function normalize(value) {
@@ -44,13 +77,14 @@ function rankPlot(plot, query) {
 
 function filterPlots() {
   const query = normalize(state.query);
+  const plots = state.collections[state.collection] || [];
 
   if (!query) {
-    state.filtered = state.plots;
+    state.filtered = plots;
     return;
   }
 
-  state.filtered = state.plots
+  state.filtered = plots
     .filter((plot) => plot.nameLower.includes(query))
     .sort((a, b) => {
       const rankDiff = rankPlot(a, query) - rankPlot(b, query);
@@ -60,6 +94,12 @@ function filterPlots() {
 
 function updateUrl() {
   const url = new URL(window.location);
+  if (state.collection === "cellTypes") {
+    url.searchParams.set("type", "cell-types");
+  } else {
+    url.searchParams.delete("type");
+  }
+
   if (state.query) {
     url.searchParams.set("q", state.query);
   } else {
@@ -69,12 +109,13 @@ function updateUrl() {
 }
 
 function renderMeta() {
-  const total = state.plots.length.toLocaleString();
+  const collection = activeCollection();
+  const total = (state.collections[state.collection] || []).length.toLocaleString();
   const matched = state.filtered.length.toLocaleString();
   const visible = Math.min(state.shown, state.filtered.length).toLocaleString();
 
-  els.counter.textContent = `${total} plots`;
-  els.title.textContent = state.query ? `Results for "${state.query}"` : "Plots";
+  els.counter.textContent = `${total} ${collection.itemLabel} plots`;
+  els.title.textContent = state.query ? `Results for "${state.query}"` : collection.title;
   els.meta.textContent = state.filtered.length
     ? `${visible} of ${matched}`
     : "0 results";
@@ -91,7 +132,7 @@ function createCard(plot) {
 
   const img = document.createElement("img");
   img.src = imageUrl(plot.file);
-  img.alt = `${plot.name} expression plot`;
+  img.alt = `${plot.name} ${activeCollection().alt}`;
   img.loading = "lazy";
 
   const name = document.createElement("span");
@@ -113,7 +154,7 @@ function renderGrid() {
   if (!visiblePlots.length) {
     const empty = document.createElement("div");
     empty.className = "empty-state";
-    empty.textContent = "No matching plots found.";
+    empty.textContent = activeCollection().empty;
     els.grid.append(empty);
     els.loadMore.hidden = true;
     renderMeta();
@@ -149,7 +190,7 @@ function openImageDialog({ src, alt, caption }) {
 function openDialog(plot) {
   openImageDialog({
     src: imageUrl(plot.file),
-    alt: `${plot.name} expression plot`,
+    alt: `${plot.name} ${activeCollection().alt}`,
     caption: plot.name,
   });
 }
@@ -167,13 +208,16 @@ function closeDialog() {
   els.dialogImage.removeAttribute("src");
 }
 
-async function loadManifest() {
-  const response = await fetch("manifest.json");
+async function loadManifest(collectionKey = state.collection) {
+  if (state.collections[collectionKey]) return;
+
+  const collection = COLLECTIONS[collectionKey];
+  const response = await fetch(collection.manifest);
   if (!response.ok) {
-    throw new Error(`Could not load manifest.json (${response.status})`);
+    throw new Error(`Could not load ${collection.manifest} (${response.status})`);
   }
   const files = await response.json();
-  state.plots = files.map((file) => {
+  state.collections[collectionKey] = files.map((file) => {
     const name = file.replace(/\.png$/i, "");
     return {
       file,
@@ -181,7 +225,35 @@ async function loadManifest() {
       nameLower: name.toLowerCase(),
     };
   });
-  state.filtered = state.plots;
+}
+
+function updateCollectionControls() {
+  const collection = activeCollection();
+  document.title = `Global Pattern Browser - ${collection.label}`;
+  els.searchLabel.textContent = collection.searchLabel;
+  els.searchNote.textContent = collection.searchNote;
+  els.searchNote.hidden = !collection.searchNote;
+  els.search.placeholder = collection.placeholder;
+  els.modeButtons.forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.mode === state.collection));
+  });
+}
+
+async function setCollection(collectionKey) {
+  if (!COLLECTIONS[collectionKey] || collectionKey === state.collection) return;
+
+  state.collection = collectionKey;
+  state.query = "";
+  state.shown = PAGE_SIZE;
+  els.search.value = "";
+  updateCollectionControls();
+  try {
+    await loadManifest();
+    render();
+  } catch (error) {
+    els.counter.textContent = "Manifest unavailable";
+    els.grid.innerHTML = `<div class="empty-state">${error.message}</div>`;
+  }
 }
 
 function bindEvents() {
@@ -206,6 +278,10 @@ function bindEvents() {
     renderGrid();
   });
 
+  els.modeButtons.forEach((button) => {
+    button.addEventListener("click", () => setCollection(button.dataset.mode));
+  });
+
   els.umapZoom.addEventListener("click", openUmapDialog);
   els.closeDialog.addEventListener("click", closeDialog);
   els.dialog.addEventListener("click", (event) => {
@@ -215,8 +291,11 @@ function bindEvents() {
 
 async function init() {
   bindEvents();
-  state.query = new URLSearchParams(window.location.search).get("q") || "";
+  const params = new URLSearchParams(window.location.search);
+  state.collection = params.get("type") === "cell-types" ? "cellTypes" : "genes";
+  state.query = params.get("q") || "";
   els.search.value = state.query;
+  updateCollectionControls();
 
   try {
     await loadManifest();

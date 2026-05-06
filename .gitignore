@@ -172,6 +172,7 @@ cython_debug/
 
 # Static website image cache is hosted on Hugging Face, not GitHub.
 global_patterns/global_gene_exp_plots_all/
+global_patterns/global_cell_type_plots_all/
 global_patterns/global_cell_type_umap.png
 
 # PyPI configuration file

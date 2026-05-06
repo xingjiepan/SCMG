@@ -3,14 +3,14 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Global Gene Expression Plots</title>
+    <title>Global Pattern Browser</title>
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <header class="site-header">
       <div>
         <p class="eyebrow">SCMG</p>
-        <h1>Global Gene Expression Plots</h1>
+        <h1>Global Pattern Browser</h1>
       </div>
       <div class="counter" id="counter">Loading plots</div>
     </header>
@@ -18,8 +18,13 @@
     <main>
       <div class="layout">
         <div class="browser">
-          <section class="search-panel" aria-label="Gene plot search">
-            <label for="searchInput">Search by gene or plot name</label>
+          <section class="search-panel" aria-label="Global pattern search">
+            <div class="mode-switch" role="group" aria-label="Pattern type">
+              <button class="mode-button" id="genesModeButton" type="button" data-mode="genes" aria-pressed="true">Genes</button>
+              <button class="mode-button" id="cellTypesModeButton" type="button" data-mode="cellTypes" aria-pressed="false">Cell types</button>
+            </div>
+            <label id="searchLabel" for="searchInput">Search by gene name</label>
+            <p class="search-note" id="searchNote" hidden></p>
             <div class="search-row">
               <input id="searchInput" type="search" autocomplete="off" placeholder="MYC, A1BG, PTGS2">
               <button id="clearButton" type="button">Clear</button>
