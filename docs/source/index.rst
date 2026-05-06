@@ -3,11 +3,15 @@ Single Cell Manifold Generator (SCMG)
 
 **SCMG** is a suite of deep learning models designed to interpret, generate, and predict the molecular basis of cell states and their transitions.
 
+.. image:: https://raw.githubusercontent.com/xingjiepan/SCMG/main/global_patterns/global_cell_type_umap.png
+   :alt: Global cell type UMAP
+   :align: center
+
 Key Features
 ------------
 
 - **Global Manifold Construction**  
-  Build a well-integrated reference manifold of single-cell transcriptional states that captures cell-state relationships and gene expression patterns. The global gene expression patterns can be visualized [here](https://xingjiepan.github.io/SCMG/).
+  Build a well-integrated reference manifold of single-cell transcriptional states that captures cell-state relationships and gene expression patterns. The global gene expression patterns can be visualized `here <https://xingjiepan.github.io/SCMG/>`_.
 
 - **Zero-Shot Dataset Integration**  
   Integrate new scRNA-seq datasets without the need for model retraining.

@@ -5,6 +5,8 @@
 
 **SCMG** is a suite of deep learning models designed to interpret, generate, and predict the molecular basis of cell states and their transitions.
 
+![Global cell type UMAP](global_patterns/global_cell_type_umap.png)
+
 ## Key Features
 
 - **Global Manifold Construction**  
