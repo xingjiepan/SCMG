@@ -1,6 +1,7 @@
 const PAGE_SIZE = 96;
 const HF_DATA_BASE = "https://huggingface.co/datasets/xingjiepan/SCMG_data/resolve/main/data";
 const UMAP_URL = `${HF_DATA_BASE}/global_cell_type_umap.png`;
+const MARKER_GENES_URL = "global_marker_genes.json";
 const COLLECTIONS = {
   genes: {
     label: "Genes",
@@ -31,6 +32,8 @@ const COLLECTIONS = {
 const state = {
   collection: "genes",
   collections: {},
+  markerGenes: null,
+  geneFilesByName: null,
   filtered: [],
   shown: PAGE_SIZE,
   query: "",
@@ -48,8 +51,14 @@ const els = {
   meta: document.querySelector("#resultsMeta"),
   loadMore: document.querySelector("#loadMoreButton"),
   dialog: document.querySelector("#imageDialog"),
+  dialogFigures: document.querySelector("#dialogFigures"),
   dialogImage: document.querySelector("#dialogImage"),
   dialogCaption: document.querySelector("#dialogCaption"),
+  geneFigure: document.querySelector("#geneFigure"),
+  geneDialogImage: document.querySelector("#geneDialogImage"),
+  geneDialogCaption: document.querySelector("#geneDialogCaption"),
+  markerPanel: document.querySelector("#markerPanel"),
+  markerList: document.querySelector("#markerList"),
   closeDialog: document.querySelector("#closeDialogButton"),
   umapZoom: document.querySelector("#umapZoomButton"),
 };
@@ -59,8 +68,12 @@ function activeCollection() {
 }
 
 function imageUrl(file) {
+  return collectionImageUrl(state.collection, file);
+}
+
+function collectionImageUrl(collectionKey, file) {
   const prefix = file[0].toUpperCase();
-  return `${activeCollection().imageDir}/${prefix}/${encodeURIComponent(file)}`;
+  return `${COLLECTIONS[collectionKey].imageDir}/${prefix}/${encodeURIComponent(file)}`;
 }
 
 function normalize(value) {
@@ -175,7 +188,18 @@ function render() {
   updateUrl();
 }
 
+function resetDialog() {
+  els.dialogFigures.classList.remove("has-comparison");
+  els.geneFigure.hidden = true;
+  els.geneDialogImage.removeAttribute("src");
+  els.geneDialogImage.alt = "";
+  els.geneDialogCaption.textContent = "";
+  els.markerPanel.hidden = true;
+  els.markerList.replaceChildren();
+}
+
 function openImageDialog({ src, alt, caption }) {
+  resetDialog();
   els.dialogImage.src = src;
   els.dialogImage.alt = alt;
   els.dialogCaption.textContent = caption;
@@ -187,7 +211,89 @@ function openImageDialog({ src, alt, caption }) {
   }
 }
 
+async function loadMarkerGenes() {
+  if (state.markerGenes) return;
+
+  const response = await fetch(MARKER_GENES_URL);
+  if (!response.ok) {
+    throw new Error(`Could not load ${MARKER_GENES_URL} (${response.status})`);
+  }
+  state.markerGenes = await response.json();
+}
+
+async function ensureGeneLookup() {
+  await loadManifest("genes");
+  if (state.geneFilesByName) return;
+
+  state.geneFilesByName = new Map();
+  state.collections.genes.forEach((plot) => {
+    state.geneFilesByName.set(plot.nameLower, plot.file);
+  });
+}
+
+async function showMarkerGene(gene, button) {
+  await ensureGeneLookup();
+  const file = state.geneFilesByName.get(gene.toLowerCase());
+  if (!file) return;
+
+  els.markerList.querySelectorAll(".marker-gene").forEach((node) => {
+    node.setAttribute("aria-pressed", String(node === button));
+  });
+  els.geneDialogImage.src = collectionImageUrl("genes", file);
+  els.geneDialogImage.alt = `${gene} gene expression plot`;
+  els.geneDialogCaption.textContent = gene;
+  els.geneFigure.hidden = false;
+  els.dialogFigures.classList.add("has-comparison");
+}
+
+function renderMarkerGenes(cellTypeName) {
+  const markers = state.markerGenes?.[cellTypeName] || [];
+  els.markerPanel.hidden = false;
+  els.markerList.replaceChildren();
+
+  if (!markers.length) {
+    const empty = document.createElement("p");
+    empty.className = "marker-empty";
+    empty.textContent = "No marker genes available.";
+    els.markerList.append(empty);
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  markers.forEach((gene) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "marker-gene";
+    button.textContent = gene;
+    button.setAttribute("aria-pressed", "false");
+    button.addEventListener("click", () => showMarkerGene(gene, button));
+    fragment.append(button);
+  });
+  els.markerList.append(fragment);
+}
+
+async function openCellTypeDialog(plot) {
+  openImageDialog({
+    src: imageUrl(plot.file),
+    alt: `${plot.name} ${activeCollection().alt}`,
+    caption: plot.name,
+  });
+
+  try {
+    await loadMarkerGenes();
+    renderMarkerGenes(plot.name);
+  } catch (error) {
+    els.markerPanel.hidden = false;
+    els.markerList.innerHTML = `<p class="marker-empty">${error.message}</p>`;
+  }
+}
+
 function openDialog(plot) {
+  if (state.collection === "cellTypes") {
+    openCellTypeDialog(plot);
+    return;
+  }
+
   openImageDialog({
     src: imageUrl(plot.file),
     alt: `${plot.name} ${activeCollection().alt}`,
@@ -206,6 +312,7 @@ function openUmapDialog() {
 function closeDialog() {
   els.dialog.close();
   els.dialogImage.removeAttribute("src");
+  resetDialog();
 }
 
 async function loadManifest(collectionKey = state.collection) {

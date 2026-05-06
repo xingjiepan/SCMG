@@ -52,10 +52,22 @@
 
     <dialog id="imageDialog" class="image-dialog">
       <button id="closeDialogButton" class="dialog-close" type="button" aria-label="Close image">Close</button>
-      <figure>
-        <img id="dialogImage" alt="">
-        <figcaption id="dialogCaption"></figcaption>
-      </figure>
+      <div class="dialog-content">
+        <div class="dialog-figures" id="dialogFigures">
+          <figure>
+            <img id="dialogImage" alt="">
+            <figcaption id="dialogCaption"></figcaption>
+          </figure>
+          <figure class="gene-figure" id="geneFigure" hidden>
+            <img id="geneDialogImage" alt="">
+            <figcaption id="geneDialogCaption"></figcaption>
+          </figure>
+        </div>
+        <section class="marker-panel" id="markerPanel" aria-label="Global marker genes" hidden>
+          <h2>Global marker genes</h2>
+          <div class="marker-list" id="markerList"></div>
+        </section>
+      </div>
     </dialog>
 
     <script src="app.js" defer></script>

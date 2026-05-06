@@ -316,7 +316,7 @@ button:hover {
 }
 
 .image-dialog {
-  width: min(96vw, 980px);
+  width: min(98vw, 1420px);
   max-height: 92vh;
   padding: 18px;
   border: 0;
@@ -334,8 +334,21 @@ button:hover {
   padding: 0 12px;
 }
 
-.image-dialog figure {
+.dialog-content {
   clear: both;
+}
+
+.dialog-figures {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+}
+
+.dialog-figures.has-comparison {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.image-dialog figure {
   margin: 18px 0 0;
 }
 
@@ -353,6 +366,43 @@ button:hover {
   text-align: center;
 }
 
+.marker-panel {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.marker-panel h2 {
+  margin-bottom: 10px;
+  font-size: 1rem;
+}
+
+.marker-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.marker-gene {
+  min-height: 34px;
+  padding: 0 10px;
+  border-color: #c9d4df;
+  color: #344054;
+  font-size: 0.88rem;
+}
+
+.marker-gene[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.marker-empty {
+  margin-bottom: 0;
+  color: var(--muted);
+  font-weight: 700;
+}
+
 @media (max-width: 1060px) {
   .layout {
     grid-template-columns: 1fr;
@@ -365,6 +415,12 @@ button:hover {
 
   .umap-zoom img {
     max-height: 52vh;
+  }
+}
+
+@media (max-width: 900px) {
+  .dialog-figures.has-comparison {
+    grid-template-columns: 1fr;
   }
 }
 
