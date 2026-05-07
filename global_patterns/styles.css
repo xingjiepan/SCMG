@@ -366,24 +366,24 @@ button:hover {
   text-align: center;
 }
 
-.marker-panel {
+.related-panel {
   margin-top: 18px;
   padding-top: 16px;
   border-top: 1px solid var(--line);
 }
 
-.marker-panel h2 {
+.related-panel h2 {
   margin-bottom: 10px;
   font-size: 1rem;
 }
 
-.marker-list {
+.related-list {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.marker-gene {
+.related-item {
   min-height: 34px;
   padding: 0 10px;
   border-color: #c9d4df;
@@ -391,13 +391,13 @@ button:hover {
   font-size: 0.88rem;
 }
 
-.marker-gene[aria-pressed="true"] {
+.related-item[aria-pressed="true"] {
   border-color: var(--accent);
   background: var(--accent);
   color: #ffffff;
 }
 
-.marker-empty {
+.related-empty {
   margin-bottom: 0;
   color: var(--muted);
   font-weight: 700;

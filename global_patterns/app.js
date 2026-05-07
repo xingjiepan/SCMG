@@ -2,6 +2,8 @@ const PAGE_SIZE = 96;
 const HF_DATA_BASE = "https://huggingface.co/datasets/xingjiepan/SCMG_data/resolve/main/data";
 const UMAP_URL = `${HF_DATA_BASE}/global_cell_type_umap.png`;
 const MARKER_GENES_URL = "global_marker_genes.json";
+const GENE_TOP_CELL_TYPES_URL = "gene_top_cell_types.json";
+const DEFAULT_HIDDEN_GENE_NAMES = new Set(["5s_rrna", "5_8s_rrna", "7sk"]);
 const COLLECTIONS = {
   genes: {
     label: "Genes",
@@ -33,7 +35,9 @@ const state = {
   collection: "genes",
   collections: {},
   markerGenes: null,
+  geneTopCellTypes: null,
   geneFilesByName: null,
+  cellTypeFilesByName: null,
   filtered: [],
   shown: PAGE_SIZE,
   query: "",
@@ -54,11 +58,12 @@ const els = {
   dialogFigures: document.querySelector("#dialogFigures"),
   dialogImage: document.querySelector("#dialogImage"),
   dialogCaption: document.querySelector("#dialogCaption"),
-  geneFigure: document.querySelector("#geneFigure"),
-  geneDialogImage: document.querySelector("#geneDialogImage"),
-  geneDialogCaption: document.querySelector("#geneDialogCaption"),
-  markerPanel: document.querySelector("#markerPanel"),
-  markerList: document.querySelector("#markerList"),
+  comparisonFigure: document.querySelector("#comparisonFigure"),
+  comparisonDialogImage: document.querySelector("#comparisonDialogImage"),
+  comparisonDialogCaption: document.querySelector("#comparisonDialogCaption"),
+  relatedPanel: document.querySelector("#relatedPanel"),
+  relatedPanelTitle: document.querySelector("#relatedPanelTitle"),
+  relatedList: document.querySelector("#relatedList"),
   closeDialog: document.querySelector("#closeDialogButton"),
   umapZoom: document.querySelector("#umapZoomButton"),
 };
@@ -93,7 +98,9 @@ function filterPlots() {
   const plots = state.collections[state.collection] || [];
 
   if (!query) {
-    state.filtered = plots;
+    state.filtered = state.collection === "genes"
+      ? plots.filter((plot) => !DEFAULT_HIDDEN_GENE_NAMES.has(plot.nameLower))
+      : plots;
     return;
   }
 
@@ -190,12 +197,13 @@ function render() {
 
 function resetDialog() {
   els.dialogFigures.classList.remove("has-comparison");
-  els.geneFigure.hidden = true;
-  els.geneDialogImage.removeAttribute("src");
-  els.geneDialogImage.alt = "";
-  els.geneDialogCaption.textContent = "";
-  els.markerPanel.hidden = true;
-  els.markerList.replaceChildren();
+  els.comparisonFigure.hidden = true;
+  els.comparisonDialogImage.removeAttribute("src");
+  els.comparisonDialogImage.alt = "";
+  els.comparisonDialogCaption.textContent = "";
+  els.relatedPanel.hidden = true;
+  els.relatedPanelTitle.textContent = "Related plots";
+  els.relatedList.replaceChildren();
 }
 
 function openImageDialog({ src, alt, caption }) {
@@ -221,6 +229,16 @@ async function loadMarkerGenes() {
   state.markerGenes = await response.json();
 }
 
+async function loadGeneTopCellTypes() {
+  if (state.geneTopCellTypes) return;
+
+  const response = await fetch(GENE_TOP_CELL_TYPES_URL);
+  if (!response.ok) {
+    throw new Error(`Could not load ${GENE_TOP_CELL_TYPES_URL} (${response.status})`);
+  }
+  state.geneTopCellTypes = await response.json();
+}
+
 async function ensureGeneLookup() {
   await loadManifest("genes");
   if (state.geneFilesByName) return;
@@ -231,31 +249,57 @@ async function ensureGeneLookup() {
   });
 }
 
+async function ensureCellTypeLookup() {
+  await loadManifest("cellTypes");
+  if (state.cellTypeFilesByName) return;
+
+  state.cellTypeFilesByName = new Map();
+  state.collections.cellTypes.forEach((plot) => {
+    state.cellTypeFilesByName.set(plot.nameLower, plot.file);
+  });
+}
+
 async function showMarkerGene(gene, button) {
   await ensureGeneLookup();
   const file = state.geneFilesByName.get(gene.toLowerCase());
   if (!file) return;
 
-  els.markerList.querySelectorAll(".marker-gene").forEach((node) => {
+  els.relatedList.querySelectorAll(".related-item").forEach((node) => {
     node.setAttribute("aria-pressed", String(node === button));
   });
-  els.geneDialogImage.src = collectionImageUrl("genes", file);
-  els.geneDialogImage.alt = `${gene} gene expression plot`;
-  els.geneDialogCaption.textContent = gene;
-  els.geneFigure.hidden = false;
+  els.comparisonDialogImage.src = collectionImageUrl("genes", file);
+  els.comparisonDialogImage.alt = `${gene} gene expression plot`;
+  els.comparisonDialogCaption.textContent = gene;
+  els.comparisonFigure.hidden = false;
+  els.dialogFigures.classList.add("has-comparison");
+}
+
+async function showTopCellType(cellType, button) {
+  await ensureCellTypeLookup();
+  const file = state.cellTypeFilesByName.get(cellType.toLowerCase());
+  if (!file) return;
+
+  els.relatedList.querySelectorAll(".related-item").forEach((node) => {
+    node.setAttribute("aria-pressed", String(node === button));
+  });
+  els.comparisonDialogImage.src = collectionImageUrl("cellTypes", file);
+  els.comparisonDialogImage.alt = `${cellType} cell type global pattern plot`;
+  els.comparisonDialogCaption.textContent = cellType;
+  els.comparisonFigure.hidden = false;
   els.dialogFigures.classList.add("has-comparison");
 }
 
 function renderMarkerGenes(cellTypeName) {
   const markers = state.markerGenes?.[cellTypeName] || [];
-  els.markerPanel.hidden = false;
-  els.markerList.replaceChildren();
+  els.relatedPanelTitle.textContent = "Global marker genes";
+  els.relatedPanel.hidden = false;
+  els.relatedList.replaceChildren();
 
   if (!markers.length) {
     const empty = document.createElement("p");
-    empty.className = "marker-empty";
+    empty.className = "related-empty";
     empty.textContent = "No marker genes available.";
-    els.markerList.append(empty);
+    els.relatedList.append(empty);
     return;
   }
 
@@ -263,13 +307,40 @@ function renderMarkerGenes(cellTypeName) {
   markers.forEach((gene) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "marker-gene";
+    button.className = "related-item";
     button.textContent = gene;
     button.setAttribute("aria-pressed", "false");
     button.addEventListener("click", () => showMarkerGene(gene, button));
     fragment.append(button);
   });
-  els.markerList.append(fragment);
+  els.relatedList.append(fragment);
+}
+
+function renderTopCellTypes(geneName) {
+  const cellTypes = state.geneTopCellTypes?.[geneName] || [];
+  els.relatedPanelTitle.textContent = "Highest expression cell types";
+  els.relatedPanel.hidden = false;
+  els.relatedList.replaceChildren();
+
+  if (!cellTypes.length) {
+    const empty = document.createElement("p");
+    empty.className = "related-empty";
+    empty.textContent = "No highest expression cell types available.";
+    els.relatedList.append(empty);
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  cellTypes.forEach((cellType) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "related-item";
+    button.textContent = cellType;
+    button.setAttribute("aria-pressed", "false");
+    button.addEventListener("click", () => showTopCellType(cellType, button));
+    fragment.append(button);
+  });
+  els.relatedList.append(fragment);
 }
 
 async function openCellTypeDialog(plot) {
@@ -283,8 +354,24 @@ async function openCellTypeDialog(plot) {
     await loadMarkerGenes();
     renderMarkerGenes(plot.name);
   } catch (error) {
-    els.markerPanel.hidden = false;
-    els.markerList.innerHTML = `<p class="marker-empty">${error.message}</p>`;
+    els.relatedPanel.hidden = false;
+    els.relatedList.innerHTML = `<p class="related-empty">${error.message}</p>`;
+  }
+}
+
+async function openGeneDialog(plot) {
+  openImageDialog({
+    src: imageUrl(plot.file),
+    alt: `${plot.name} ${activeCollection().alt}`,
+    caption: plot.name,
+  });
+
+  try {
+    await loadGeneTopCellTypes();
+    renderTopCellTypes(plot.name);
+  } catch (error) {
+    els.relatedPanel.hidden = false;
+    els.relatedList.innerHTML = `<p class="related-empty">${error.message}</p>`;
   }
 }
 
@@ -294,11 +381,7 @@ function openDialog(plot) {
     return;
   }
 
-  openImageDialog({
-    src: imageUrl(plot.file),
-    alt: `${plot.name} ${activeCollection().alt}`,
-    caption: plot.name,
-  });
+  openGeneDialog(plot);
 }
 
 function openUmapDialog() {
