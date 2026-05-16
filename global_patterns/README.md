@@ -36,6 +36,10 @@ data/global_cell_type_plots_all/E/enteroendocrine%20cell.png
 data/global_cell_type_umap.png
 ```
 
+Gene annotations are stored in `gene_annotations.json`. The NCBI fields are
+generated from the NCBI human `gene_info` table, and the UniProt fields are
+generated from reviewed human UniProtKB records.
+
 ## Free hosting options
 
 ### GitHub Pages

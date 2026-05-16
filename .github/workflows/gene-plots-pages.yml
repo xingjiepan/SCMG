@@ -11,6 +11,7 @@ on:
       - "global_patterns/app.js"
       - "global_patterns/manifest.json"
       - "global_patterns/cell_type_manifest.json"
+      - "global_patterns/gene_annotations.json"
       - "global_patterns/global_marker_genes.json"
       - "global_patterns/gene_top_cell_types.json"
       - "global_patterns/README.md"
@@ -48,6 +49,7 @@ jobs:
           cp global_patterns/app.js site/
           cp global_patterns/manifest.json site/
           cp global_patterns/cell_type_manifest.json site/
+          cp global_patterns/gene_annotations.json site/
           cp global_patterns/global_marker_genes.json site/
           cp global_patterns/gene_top_cell_types.json site/
           cp global_patterns/README.md site/

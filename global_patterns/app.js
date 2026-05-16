@@ -4,6 +4,7 @@ const HF_DATA_BASE = "https://huggingface.co/datasets/xingjiepan/SCMG_data/resol
 const UMAP_URL = `${HF_DATA_BASE}/global_cell_type_umap.png`;
 const MARKER_GENES_URL = "global_marker_genes.json";
 const GENE_TOP_CELL_TYPES_URL = "gene_top_cell_types.json";
+const GENE_ANNOTATIONS_URL = "gene_annotations.json";
 const DEFAULT_HIDDEN_GENE_NAMES = new Set(["5s_rrna", "5_8s_rrna", "7sk"]);
 const COLLECTIONS = {
   genes: {
@@ -37,8 +38,10 @@ const state = {
   collections: {},
   markerGenes: null,
   geneTopCellTypes: null,
+  geneAnnotations: null,
   geneFilesByName: null,
   cellTypeFilesByName: null,
+  activeGeneName: "",
   filtered: [],
   luckyItems: [],
   isLucky: false,
@@ -65,6 +68,7 @@ const els = {
   comparisonFigure: document.querySelector("#comparisonFigure"),
   comparisonDialogImage: document.querySelector("#comparisonDialogImage"),
   comparisonDialogCaption: document.querySelector("#comparisonDialogCaption"),
+  annotationBox: document.querySelector("#annotationBox"),
   relatedPanel: document.querySelector("#relatedPanel"),
   relatedPanelTitle: document.querySelector("#relatedPanelTitle"),
   relatedList: document.querySelector("#relatedList"),
@@ -237,12 +241,16 @@ async function showLuckyPlots() {
 function resetDialog() {
   els.dialogFigures.classList.remove("has-comparison");
   els.comparisonFigure.hidden = true;
+  els.comparisonDialogImage.hidden = false;
   els.comparisonDialogImage.removeAttribute("src");
   els.comparisonDialogImage.alt = "";
   els.comparisonDialogCaption.textContent = "";
+  els.annotationBox.hidden = true;
+  els.annotationBox.replaceChildren();
   els.relatedPanel.hidden = true;
   els.relatedPanelTitle.textContent = "Related plots";
   els.relatedList.replaceChildren();
+  state.activeGeneName = "";
 }
 
 function openImageDialog({ src, alt, caption }) {
@@ -278,6 +286,111 @@ async function loadGeneTopCellTypes() {
   state.geneTopCellTypes = await response.json();
 }
 
+async function loadGeneAnnotations() {
+  if (state.geneAnnotations) return;
+
+  const response = await fetch(GENE_ANNOTATIONS_URL);
+  if (!response.ok) {
+    throw new Error(`Could not load ${GENE_ANNOTATIONS_URL} (${response.status})`);
+  }
+  state.geneAnnotations = await response.json();
+}
+
+function addAnnotationField(parent, label, value, href = "") {
+  if (!value) return;
+
+  const block = document.createElement("p");
+  const strong = document.createElement("strong");
+  strong.textContent = `${label}: `;
+  block.append(strong);
+
+  if (href) {
+    const link = document.createElement("a");
+    link.href = href;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = value;
+    block.append(link);
+  } else {
+    block.append(document.createTextNode(value));
+  }
+  parent.append(block);
+}
+
+function addAnnotationSection(parent, title, source) {
+  const section = document.createElement("section");
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+  section.append(heading);
+
+  if (!source) {
+    const empty = document.createElement("p");
+    empty.className = "annotation-empty";
+    empty.textContent = "No annotation available.";
+    section.append(empty);
+    parent.append(section);
+    return;
+  }
+
+  if (source.geneId) addAnnotationField(section, "Gene ID", source.geneId, source.url);
+  if (source.accession) addAnnotationField(section, "UniProt", source.accession, source.url);
+  addAnnotationField(section, "Description", source.description);
+  addAnnotationField(section, "Protein", source.proteinName);
+  addAnnotationField(section, "Function", source.function);
+  addAnnotationField(section, "Type", source.type);
+  if (source.aliases?.length) addAnnotationField(section, "Aliases", source.aliases.join(", "));
+  if (source.otherDesignations?.length) {
+    addAnnotationField(section, "Other names", source.otherDesignations.join("; "));
+  }
+  parent.append(section);
+}
+
+function renderGeneAnnotation(geneName) {
+  els.comparisonDialogImage.hidden = true;
+  els.comparisonDialogImage.removeAttribute("src");
+  els.comparisonDialogImage.alt = "";
+  els.comparisonDialogCaption.textContent = "Gene annotations";
+  els.annotationBox.hidden = false;
+  els.annotationBox.replaceChildren();
+  els.comparisonFigure.hidden = false;
+  els.dialogFigures.classList.add("has-comparison");
+
+  const title = document.createElement("h2");
+  title.textContent = geneName;
+  els.annotationBox.append(title);
+
+  const annotation = state.geneAnnotations?.[geneName];
+  if (!state.geneAnnotations) {
+    const loading = document.createElement("p");
+    loading.className = "annotation-empty";
+    loading.textContent = "Loading annotations...";
+    els.annotationBox.append(loading);
+    return;
+  }
+
+  if (!annotation) {
+    const empty = document.createElement("p");
+    empty.className = "annotation-empty";
+    empty.textContent = "No NCBI or UniProt annotation available for this gene.";
+    els.annotationBox.append(empty);
+    return;
+  }
+
+  addAnnotationSection(els.annotationBox, "NCBI Gene", annotation.ncbi);
+  addAnnotationSection(els.annotationBox, "UniProt", annotation.uniprot);
+}
+
+function showComparisonImage(src, alt, caption) {
+  els.annotationBox.hidden = true;
+  els.annotationBox.replaceChildren();
+  els.comparisonDialogImage.hidden = false;
+  els.comparisonDialogImage.src = src;
+  els.comparisonDialogImage.alt = alt;
+  els.comparisonDialogCaption.textContent = caption;
+  els.comparisonFigure.hidden = false;
+  els.dialogFigures.classList.add("has-comparison");
+}
+
 async function ensureGeneLookup() {
   await loadManifest("genes");
   if (state.geneFilesByName) return;
@@ -306,11 +419,7 @@ async function showMarkerGene(gene, button) {
   els.relatedList.querySelectorAll(".related-item").forEach((node) => {
     node.setAttribute("aria-pressed", String(node === button));
   });
-  els.comparisonDialogImage.src = collectionImageUrl("genes", file);
-  els.comparisonDialogImage.alt = `${gene} gene expression plot`;
-  els.comparisonDialogCaption.textContent = gene;
-  els.comparisonFigure.hidden = false;
-  els.dialogFigures.classList.add("has-comparison");
+  showComparisonImage(collectionImageUrl("genes", file), `${gene} gene expression plot`, gene);
 }
 
 async function showTopCellType(cellType, button) {
@@ -318,14 +427,20 @@ async function showTopCellType(cellType, button) {
   const file = state.cellTypeFilesByName.get(cellType.toLowerCase());
   if (!file) return;
 
+  if (button.getAttribute("aria-pressed") === "true") {
+    button.setAttribute("aria-pressed", "false");
+    renderGeneAnnotation(state.activeGeneName);
+    return;
+  }
+
   els.relatedList.querySelectorAll(".related-item").forEach((node) => {
     node.setAttribute("aria-pressed", String(node === button));
   });
-  els.comparisonDialogImage.src = collectionImageUrl("cellTypes", file);
-  els.comparisonDialogImage.alt = `${cellType} cell type global pattern plot`;
-  els.comparisonDialogCaption.textContent = cellType;
-  els.comparisonFigure.hidden = false;
-  els.dialogFigures.classList.add("has-comparison");
+  showComparisonImage(
+    collectionImageUrl("cellTypes", file),
+    `${cellType} cell type global pattern plot`,
+    cellType,
+  );
 }
 
 function renderMarkerGenes(cellTypeName) {
@@ -404,9 +519,12 @@ async function openGeneDialog(plot) {
     alt: `${plot.name} ${activeCollection().alt}`,
     caption: plot.name,
   });
+  state.activeGeneName = plot.name;
+  renderGeneAnnotation(plot.name);
 
   try {
-    await loadGeneTopCellTypes();
+    await Promise.all([loadGeneTopCellTypes(), loadGeneAnnotations()]);
+    renderGeneAnnotation(plot.name);
     renderTopCellTypes(plot.name);
   } catch (error) {
     els.relatedPanel.hidden = false;

@@ -371,6 +371,47 @@ button:hover {
   text-align: center;
 }
 
+.annotation-box {
+  overflow: auto;
+  max-height: 75vh;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.annotation-box h2 {
+  margin-bottom: 14px;
+  font-size: 1.2rem;
+}
+
+.annotation-box h3 {
+  margin: 18px 0 8px;
+  color: var(--accent-strong);
+  font-size: 0.98rem;
+}
+
+.annotation-box h3:first-of-type {
+  margin-top: 0;
+}
+
+.annotation-box p {
+  margin-bottom: 9px;
+  font-size: 0.92rem;
+}
+
+.annotation-box a {
+  color: var(--accent-strong);
+}
+
+.annotation-empty {
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .related-panel {
   margin-top: 18px;
   padding-top: 16px;
