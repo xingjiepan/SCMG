@@ -52,7 +52,13 @@
     </main>
 
     <dialog id="imageDialog" class="image-dialog">
-      <button id="closeDialogButton" class="dialog-close" type="button" aria-label="Close image">Close</button>
+      <div class="dialog-toolbar">
+        <div class="dialog-history-controls" aria-label="Dialog history">
+          <button id="dialogBackButton" type="button" disabled>Back</button>
+          <button id="dialogForwardButton" type="button" disabled>Forward</button>
+        </div>
+        <button id="closeDialogButton" class="dialog-close" type="button" aria-label="Close image">Close</button>
+      </div>
       <div class="dialog-content">
         <div class="dialog-figures" id="dialogFigures">
           <figure>

@@ -41,6 +41,8 @@ const state = {
   geneAnnotations: null,
   geneFilesByName: null,
   cellTypeFilesByName: null,
+  dialogHistory: [],
+  dialogHistoryIndex: -1,
   activeGeneName: "",
   filtered: [],
   luckyItems: [],
@@ -72,6 +74,8 @@ const els = {
   relatedPanel: document.querySelector("#relatedPanel"),
   relatedPanelTitle: document.querySelector("#relatedPanelTitle"),
   relatedList: document.querySelector("#relatedList"),
+  dialogBack: document.querySelector("#dialogBackButton"),
+  dialogForward: document.querySelector("#dialogForwardButton"),
   closeDialog: document.querySelector("#closeDialogButton"),
   umapZoom: document.querySelector("#umapZoomButton"),
 };
@@ -210,6 +214,40 @@ function render() {
   filterPlots();
   renderGrid();
   updateUrl();
+}
+
+function dialogHistoryEntry(collectionKey, plot) {
+  return {
+    collection: collectionKey,
+    name: plot.name,
+  };
+}
+
+function updateDialogHistoryControls() {
+  els.dialogBack.disabled = state.dialogHistoryIndex <= 0;
+  els.dialogForward.disabled = state.dialogHistoryIndex >= state.dialogHistory.length - 1;
+}
+
+function recordDialogHistory(collectionKey, plot) {
+  if (!els.dialog.open) resetDialogHistory();
+
+  const entry = dialogHistoryEntry(collectionKey, plot);
+  const current = state.dialogHistory[state.dialogHistoryIndex];
+  if (current?.collection === entry.collection && current?.name === entry.name) {
+    updateDialogHistoryControls();
+    return;
+  }
+
+  state.dialogHistory = state.dialogHistory.slice(0, state.dialogHistoryIndex + 1);
+  state.dialogHistory.push(entry);
+  state.dialogHistoryIndex = state.dialogHistory.length - 1;
+  updateDialogHistoryControls();
+}
+
+function resetDialogHistory() {
+  state.dialogHistory = [];
+  state.dialogHistoryIndex = -1;
+  updateDialogHistoryControls();
 }
 
 function visibleDefaultPlots(collectionKey = state.collection) {
@@ -430,11 +468,11 @@ async function ensureCellTypeLookup() {
 }
 
 function jumpToGeneDialog(plot) {
-  openGeneDialog(plot);
+  openGeneDialog(plot, { recordHistory: true });
 }
 
 function jumpToCellTypeDialog(plot) {
-  openCellTypeDialog(plot);
+  openCellTypeDialog(plot, { recordHistory: true });
 }
 
 async function showMarkerGene(gene, button) {
@@ -529,7 +567,10 @@ function renderTopCellTypes(geneName) {
   els.relatedList.append(fragment);
 }
 
-async function openCellTypeDialog(plot) {
+async function openCellTypeDialog(plot, options = {}) {
+  const { recordHistory = false } = options;
+  if (recordHistory) recordDialogHistory("cellTypes", plot);
+
   openImageDialog({
     src: collectionImageUrl("cellTypes", plot.file),
     alt: `${plot.name} ${COLLECTIONS.cellTypes.alt}`,
@@ -545,7 +586,10 @@ async function openCellTypeDialog(plot) {
   }
 }
 
-async function openGeneDialog(plot) {
+async function openGeneDialog(plot, options = {}) {
+  const { recordHistory = false } = options;
+  if (recordHistory) recordDialogHistory("genes", plot);
+
   openImageDialog({
     src: collectionImageUrl("genes", plot.file),
     alt: `${plot.name} ${COLLECTIONS.genes.alt}`,
@@ -566,14 +610,15 @@ async function openGeneDialog(plot) {
 
 function openDialog(plot) {
   if (state.collection === "cellTypes") {
-    openCellTypeDialog(plot);
+    openCellTypeDialog(plot, { recordHistory: true });
     return;
   }
 
-  openGeneDialog(plot);
+  openGeneDialog(plot, { recordHistory: true });
 }
 
 function openUmapDialog() {
+  resetDialogHistory();
   openImageDialog({
     src: UMAP_URL,
     alt: "Global cell type UMAP",
@@ -585,6 +630,43 @@ function closeDialog() {
   els.dialog.close();
   els.dialogImage.removeAttribute("src");
   resetDialog();
+  resetDialogHistory();
+}
+
+async function plotFromHistoryEntry(entry) {
+  if (!entry) return null;
+
+  if (entry.collection === "genes") {
+    await ensureGeneLookup();
+    return state.geneFilesByName.get(entry.name.toLowerCase()) || null;
+  }
+
+  if (entry.collection === "cellTypes") {
+    await ensureCellTypeLookup();
+    return state.cellTypeFilesByName.get(entry.name.toLowerCase()) || null;
+  }
+
+  return null;
+}
+
+async function openDialogFromHistory(entry) {
+  const plot = await plotFromHistoryEntry(entry);
+  if (!plot) return;
+
+  if (entry.collection === "genes") {
+    openGeneDialog(plot);
+  } else {
+    openCellTypeDialog(plot);
+  }
+  updateDialogHistoryControls();
+}
+
+async function navigateDialogHistory(direction) {
+  const nextIndex = state.dialogHistoryIndex + direction;
+  if (nextIndex < 0 || nextIndex >= state.dialogHistory.length) return;
+
+  state.dialogHistoryIndex = nextIndex;
+  await openDialogFromHistory(state.dialogHistory[state.dialogHistoryIndex]);
 }
 
 async function loadManifest(collectionKey = state.collection) {
@@ -672,6 +754,8 @@ function bindEvents() {
   });
 
   els.umapZoom.addEventListener("click", openUmapDialog);
+  els.dialogBack.addEventListener("click", () => navigateDialogHistory(-1));
+  els.dialogForward.addEventListener("click", () => navigateDialogHistory(1));
   els.closeDialog.addEventListener("click", closeDialog);
   els.dialog.addEventListener("click", (event) => {
     if (event.target === els.dialog) closeDialog();
