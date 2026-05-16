@@ -371,6 +371,21 @@ button:hover {
   text-align: center;
 }
 
+.dialog-caption-button {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent-strong);
+  font-weight: 850;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dialog-caption-button:hover {
+  color: var(--accent);
+}
+
 .annotation-box {
   overflow: auto;
   max-height: 75vh;

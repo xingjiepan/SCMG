@@ -259,11 +259,29 @@ function openImageDialog({ src, alt, caption }) {
   els.dialogImage.alt = alt;
   els.dialogCaption.textContent = caption;
 
+  if (els.dialog.open) return;
+
   if (typeof els.dialog.showModal === "function") {
     els.dialog.showModal();
   } else {
     window.open(src, "_blank", "noopener");
   }
+}
+
+function setComparisonCaption(caption, onClick) {
+  els.comparisonDialogCaption.replaceChildren();
+
+  if (!onClick) {
+    els.comparisonDialogCaption.textContent = caption;
+    return;
+  }
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "dialog-caption-button";
+  button.textContent = caption;
+  button.addEventListener("click", onClick);
+  els.comparisonDialogCaption.append(button);
 }
 
 async function loadMarkerGenes() {
@@ -349,7 +367,7 @@ function renderGeneAnnotation(geneName) {
   els.comparisonDialogImage.hidden = true;
   els.comparisonDialogImage.removeAttribute("src");
   els.comparisonDialogImage.alt = "";
-  els.comparisonDialogCaption.textContent = "Gene annotations";
+  setComparisonCaption("Gene annotations");
   els.annotationBox.hidden = false;
   els.annotationBox.replaceChildren();
   els.comparisonFigure.hidden = false;
@@ -380,13 +398,13 @@ function renderGeneAnnotation(geneName) {
   addAnnotationSection(els.annotationBox, "UniProt", annotation.uniprot);
 }
 
-function showComparisonImage(src, alt, caption) {
+function showComparisonImage(src, alt, caption, onCaptionClick) {
   els.annotationBox.hidden = true;
   els.annotationBox.replaceChildren();
   els.comparisonDialogImage.hidden = false;
   els.comparisonDialogImage.src = src;
   els.comparisonDialogImage.alt = alt;
-  els.comparisonDialogCaption.textContent = caption;
+  setComparisonCaption(caption, onCaptionClick);
   els.comparisonFigure.hidden = false;
   els.dialogFigures.classList.add("has-comparison");
 }
@@ -397,7 +415,7 @@ async function ensureGeneLookup() {
 
   state.geneFilesByName = new Map();
   state.collections.genes.forEach((plot) => {
-    state.geneFilesByName.set(plot.nameLower, plot.file);
+    state.geneFilesByName.set(plot.nameLower, plot);
   });
 }
 
@@ -407,25 +425,38 @@ async function ensureCellTypeLookup() {
 
   state.cellTypeFilesByName = new Map();
   state.collections.cellTypes.forEach((plot) => {
-    state.cellTypeFilesByName.set(plot.nameLower, plot.file);
+    state.cellTypeFilesByName.set(plot.nameLower, plot);
   });
+}
+
+function jumpToGeneDialog(plot) {
+  openGeneDialog(plot);
+}
+
+function jumpToCellTypeDialog(plot) {
+  openCellTypeDialog(plot);
 }
 
 async function showMarkerGene(gene, button) {
   await ensureGeneLookup();
-  const file = state.geneFilesByName.get(gene.toLowerCase());
-  if (!file) return;
+  const plot = state.geneFilesByName.get(gene.toLowerCase());
+  if (!plot) return;
 
   els.relatedList.querySelectorAll(".related-item").forEach((node) => {
     node.setAttribute("aria-pressed", String(node === button));
   });
-  showComparisonImage(collectionImageUrl("genes", file), `${gene} gene expression plot`, gene);
+  showComparisonImage(
+    collectionImageUrl("genes", plot.file),
+    `${gene} gene expression plot`,
+    gene,
+    () => jumpToGeneDialog(plot),
+  );
 }
 
 async function showTopCellType(cellType, button) {
   await ensureCellTypeLookup();
-  const file = state.cellTypeFilesByName.get(cellType.toLowerCase());
-  if (!file) return;
+  const plot = state.cellTypeFilesByName.get(cellType.toLowerCase());
+  if (!plot) return;
 
   if (button.getAttribute("aria-pressed") === "true") {
     button.setAttribute("aria-pressed", "false");
@@ -437,9 +468,10 @@ async function showTopCellType(cellType, button) {
     node.setAttribute("aria-pressed", String(node === button));
   });
   showComparisonImage(
-    collectionImageUrl("cellTypes", file),
+    collectionImageUrl("cellTypes", plot.file),
     `${cellType} cell type global pattern plot`,
     cellType,
+    () => jumpToCellTypeDialog(plot),
   );
 }
 
@@ -499,8 +531,8 @@ function renderTopCellTypes(geneName) {
 
 async function openCellTypeDialog(plot) {
   openImageDialog({
-    src: imageUrl(plot.file),
-    alt: `${plot.name} ${activeCollection().alt}`,
+    src: collectionImageUrl("cellTypes", plot.file),
+    alt: `${plot.name} ${COLLECTIONS.cellTypes.alt}`,
     caption: plot.name,
   });
 
@@ -515,8 +547,8 @@ async function openCellTypeDialog(plot) {
 
 async function openGeneDialog(plot) {
   openImageDialog({
-    src: imageUrl(plot.file),
-    alt: `${plot.name} ${activeCollection().alt}`,
+    src: collectionImageUrl("genes", plot.file),
+    alt: `${plot.name} ${COLLECTIONS.genes.alt}`,
     caption: plot.name,
   });
   state.activeGeneName = plot.name;
