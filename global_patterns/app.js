@@ -1,4 +1,5 @@
 const PAGE_SIZE = 96;
+const LUCKY_SIZE = 48;
 const HF_DATA_BASE = "https://huggingface.co/datasets/xingjiepan/SCMG_data/resolve/main/data";
 const UMAP_URL = `${HF_DATA_BASE}/global_cell_type_umap.png`;
 const MARKER_GENES_URL = "global_marker_genes.json";
@@ -39,6 +40,8 @@ const state = {
   geneFilesByName: null,
   cellTypeFilesByName: null,
   filtered: [],
+  luckyItems: [],
+  isLucky: false,
   shown: PAGE_SIZE,
   query: "",
 };
@@ -49,6 +52,7 @@ const els = {
   searchLabel: document.querySelector("#searchLabel"),
   searchNote: document.querySelector("#searchNote"),
   clear: document.querySelector("#clearButton"),
+  lucky: document.querySelector("#luckyButton"),
   modeButtons: document.querySelectorAll(".mode-button"),
   grid: document.querySelector("#resultsGrid"),
   title: document.querySelector("#resultsTitle"),
@@ -97,6 +101,11 @@ function filterPlots() {
   const query = normalize(state.query);
   const plots = state.collections[state.collection] || [];
 
+  if (state.isLucky) {
+    state.filtered = state.luckyItems;
+    return;
+  }
+
   if (!query) {
     state.filtered = state.collection === "genes"
       ? plots.filter((plot) => !DEFAULT_HIDDEN_GENE_NAMES.has(plot.nameLower))
@@ -135,7 +144,11 @@ function renderMeta() {
   const visible = Math.min(state.shown, state.filtered.length).toLocaleString();
 
   els.counter.textContent = `${total} ${collection.itemLabel} plots`;
-  els.title.textContent = state.query ? `Results for "${state.query}"` : collection.title;
+  if (state.isLucky) {
+    els.title.textContent = `Random ${collection.itemLabel} plots`;
+  } else {
+    els.title.textContent = state.query ? `Results for "${state.query}"` : collection.title;
+  }
   els.meta.textContent = state.filtered.length
     ? `${visible} of ${matched}`
     : "0 results";
@@ -193,6 +206,32 @@ function render() {
   filterPlots();
   renderGrid();
   updateUrl();
+}
+
+function visibleDefaultPlots(collectionKey = state.collection) {
+  const plots = state.collections[collectionKey] || [];
+  if (collectionKey !== "genes") return plots;
+
+  return plots.filter((plot) => !DEFAULT_HIDDEN_GENE_NAMES.has(plot.nameLower));
+}
+
+function samplePlots(plots, sampleSize) {
+  const pool = [...plots];
+  for (let index = pool.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [pool[index], pool[swapIndex]] = [pool[swapIndex], pool[index]];
+  }
+  return pool.slice(0, Math.min(sampleSize, pool.length));
+}
+
+async function showLuckyPlots() {
+  await loadManifest();
+  state.query = "";
+  state.isLucky = true;
+  state.luckyItems = samplePlots(visibleDefaultPlots(), LUCKY_SIZE);
+  state.shown = PAGE_SIZE;
+  els.search.value = "";
+  render();
 }
 
 function resetDialog() {
@@ -434,6 +473,8 @@ async function setCollection(collectionKey) {
 
   state.collection = collectionKey;
   state.query = "";
+  state.isLucky = false;
+  state.luckyItems = [];
   state.shown = PAGE_SIZE;
   els.search.value = "";
   updateCollectionControls();
@@ -451,16 +492,24 @@ function bindEvents() {
 
   els.search.addEventListener("input", (event) => {
     state.query = event.target.value;
+    state.isLucky = false;
+    state.luckyItems = [];
     state.shown = PAGE_SIZE;
     render();
   });
 
   els.clear.addEventListener("click", () => {
     state.query = "";
+    state.isLucky = false;
+    state.luckyItems = [];
     els.search.value = "";
     els.search.focus();
     state.shown = PAGE_SIZE;
     render();
+  });
+
+  els.lucky.addEventListener("click", () => {
+    showLuckyPlots();
   });
 
   els.loadMore.addEventListener("click", () => {

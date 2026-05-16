@@ -135,7 +135,7 @@ main {
 
 .search-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 10px;
 }
 
@@ -170,8 +170,13 @@ button:hover {
   color: var(--accent-strong);
 }
 
-#clearButton {
+#clearButton,
+#luckyButton {
   min-width: 88px;
+}
+
+#luckyButton {
+  min-width: 156px;
 }
 
 .results-shell {
@@ -439,7 +444,8 @@ button:hover {
     grid-template-columns: 1fr;
   }
 
-  #clearButton {
+  #clearButton,
+  #luckyButton {
     width: 100%;
   }
 
