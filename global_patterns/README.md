@@ -40,6 +40,13 @@ Gene annotations are stored in `gene_annotations.json`. The NCBI fields are
 generated from the NCBI human `gene_info` table, and the UniProt fields are
 generated from reviewed human UniProtKB records.
 
+Gene search matches symbols, aliases, full gene names, and other names from
+the NCBI and UniProt annotations, ignoring case. Matches to the displayed gene
+symbol always appear first (exact, prefix, then substring matches), followed
+by alias and other-name matches in alphabetical order. Annotations load in
+the background, and the current results refresh when they become available.
+Cell type search continues to match cell type names only.
+
 ## Free hosting options
 
 ### GitHub Pages

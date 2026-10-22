@@ -12,8 +12,8 @@ const COLLECTIONS = {
     itemLabel: "gene",
     manifest: "manifest.json",
     imageDir: `${HF_DATA_BASE}/global_gene_exp_plots_all`,
-    searchLabel: "Search by gene name",
-    searchNote: "",
+    searchLabel: "Search by gene name or alias",
+    searchNote: "Search includes aliases and other gene names. Formal-name matches appear first.",
     placeholder: "MYC, A1BG, PTGS2",
     title: "Gene plots",
     empty: "No matching gene plots found.",
@@ -39,6 +39,9 @@ const state = {
   markerGenes: null,
   geneTopCellTypes: null,
   geneAnnotations: null,
+  geneAnnotationsPromise: null,
+  geneSearchNames: new Map(),
+  geneSearchError: false,
   geneFilesByName: null,
   cellTypeFilesByName: null,
   dialogHistory: [],
@@ -102,7 +105,9 @@ function rankPlot(plot, query) {
   if (name === query) return 0;
   if (name.startsWith(query)) return 1;
   if (name.includes(query)) return 2;
-  return 3;
+  if (state.collection === "genes"
+      && state.geneSearchNames.get(plot.name)?.some((name) => name.includes(query))) return 3;
+  return Infinity;
 }
 
 function filterPlots() {
@@ -122,11 +127,12 @@ function filterPlots() {
   }
 
   state.filtered = plots
-    .filter((plot) => plot.nameLower.includes(query))
+    .map((plot) => ({ plot, rank: rankPlot(plot, query) }))
+    .filter(({ rank }) => Number.isFinite(rank))
     .sort((a, b) => {
-      const rankDiff = rankPlot(a, query) - rankPlot(b, query);
-      return rankDiff || a.name.localeCompare(b.name);
-    });
+      return a.rank - b.rank || a.plot.name.localeCompare(b.plot.name);
+    })
+    .map(({ plot }) => plot);
 }
 
 function updateUrl() {
@@ -344,12 +350,47 @@ async function loadGeneTopCellTypes() {
 
 async function loadGeneAnnotations() {
   if (state.geneAnnotations) return;
+  if (state.geneAnnotationsPromise) return state.geneAnnotationsPromise;
 
-  const response = await fetch(GENE_ANNOTATIONS_URL);
-  if (!response.ok) {
-    throw new Error(`Could not load ${GENE_ANNOTATIONS_URL} (${response.status})`);
+  state.geneAnnotationsPromise = (async () => {
+    const response = await fetch(GENE_ANNOTATIONS_URL);
+    if (!response.ok) {
+      throw new Error(`Could not load ${GENE_ANNOTATIONS_URL} (${response.status})`);
+    }
+    const annotations = await response.json();
+    state.geneSearchNames = new Map(Object.entries(annotations).map(([gene, annotation]) => {
+      const names = [
+        annotation.ncbi?.symbol,
+        annotation.ncbi?.description,
+        ...(annotation.ncbi?.aliases || []),
+        ...(annotation.ncbi?.otherDesignations || []),
+        annotation.uniprot?.gene,
+        annotation.uniprot?.proteinName,
+      ];
+      return [gene, [...new Set(names.filter(Boolean).map(normalize))]];
+    }));
+    state.geneAnnotations = annotations;
+    state.geneSearchError = false;
+  })();
+
+  try {
+    await state.geneAnnotationsPromise;
+  } finally {
+    state.geneAnnotationsPromise = null;
   }
-  state.geneAnnotations = await response.json();
+}
+
+async function loadGeneSearchNames() {
+  try {
+    await loadGeneAnnotations();
+  } catch (error) {
+    state.geneSearchError = true;
+  }
+
+  if (state.collection === "genes") {
+    updateCollectionControls();
+    render();
+  }
 }
 
 function addAnnotationField(parent, label, value, href = "") {
@@ -693,6 +734,11 @@ function updateCollectionControls() {
   document.title = `Global Pattern Browser - ${collection.label}`;
   els.searchLabel.textContent = collection.searchLabel;
   els.searchNote.textContent = collection.searchNote;
+  if (state.collection === "genes" && !state.geneAnnotations) {
+    els.searchNote.textContent = state.geneSearchError
+      ? "Aliases and other gene names could not be loaded. Showing formal-name matches only."
+      : "Loading aliases and other gene names. Formal-name matches appear first.";
+  }
   els.searchNote.hidden = !collection.searchNote;
   els.search.placeholder = collection.placeholder;
   els.modeButtons.forEach((button) => {
@@ -713,6 +759,7 @@ async function setCollection(collectionKey) {
   try {
     await loadManifest();
     render();
+    if (state.collection === "genes") loadGeneSearchNames();
   } catch (error) {
     els.counter.textContent = "Manifest unavailable";
     els.grid.innerHTML = `<div class="empty-state">${error.message}</div>`;
@@ -773,6 +820,7 @@ async function init() {
   try {
     await loadManifest();
     render();
+    if (state.collection === "genes") loadGeneSearchNames();
   } catch (error) {
     els.counter.textContent = "Manifest unavailable";
     els.grid.innerHTML = `<div class="empty-state">${error.message}</div>`;
